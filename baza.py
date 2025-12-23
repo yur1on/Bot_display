@@ -961,6 +961,7 @@ glass_data = [
     ("A055f", ["Samsung A05", "\nXiaomi Redmi 13c","Realme c53", "(<em>отличие в окошках под датчики\n и вырез под динамик</em>)", "<b>Display: IPS</b>"]),
     ("samsung A055f", ["Samsung A05", "\nXiaomi Redmi 13c","Realme c53", "(<em>отличие в окошках под датчики\n и вырез под динамик</em>)", "<b>Display: IPS</b>"]),
 
+
     ("Samsung A06", ["Samsung A06 (A065)", "Samsung A06 5G (A066)", "Samsung A07 4G (A075)", "<b>Display: IPS</b>"]),
     ("Samsung A06 5g", ["Samsung A06 (A065)", "Samsung A06 5G (A066)", "Samsung A07 4G (A075)", "<b>Display: IPS</b>"]),
     ("Samsung A07", ["Samsung A06 (A065)", "Samsung A06 5G (A066)", "Samsung A07 4G (A075)", "<b>Display: IPS</b>"]),
