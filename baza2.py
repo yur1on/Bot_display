@@ -431,6 +431,8 @@ glass_data9 = [
 
     {"model": "<b>Xiaomi Redmi Note 9 Pro 5G/ Xiaomi Poco X3/ Xiaomi Poco X3 Pro/ Xiaomi Poco M2 Pro/ Xiaomi Mi 10i/ Xiaomi Mi 10t Lite</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 2мм \nНижняя часть - 4.2мм \nБоковая рамка - 1.7мм", "height": 161, "width": 73, "photo_path": "photos/xiaomi poco x3.png"},
 
+    {"model": "Xiaomi Poco X6 Pro/ Xiaomi Poco F6/ Xiaomi Redmi K70e/ Xiaomi Redmi Turbo 3", "height": 158, "width": 72, "photo_path": "photos/poco x6 pro.png"},
+
 
     # {"model": "Xiaomi Pocophone F2 Pro", "height": 155, "width": 71},
     # {"model": "Xiaomi K30 Pro", "height": 155, "width": 71},
@@ -479,13 +481,33 @@ glass_data9 = [
 
     {"model": "<b>Xiaomi Redmi 10C/ Xiaomi Redmi 12C/Xiaomi Poco C40/ Xiaomi Poco C55</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 2.65мм \nНижняя часть - 5.95мм \nБоковая рамка - 2.1мм", "height": 164.5, "width": 72.5, "photo_path": "photos/xiaomi redmi 10c.png"},
 
+    {"model": "<b>Xiaomi Redmi 13C/ Xiaomi Poco C65</b>", "height": 164.5, "width": 74, "photo_path": "photos/redmi 13c.png"},
+
+    {"model": "<b>Xiaomi Redmi 15C</b>", "height": 167.5, "width": 76, "photo_path": "photos/Redmi 15c.png"},
+
+    {"model": "<b>Xiaomi Redmi 14C / Xiaomi Redmi 14C 5G / Xiaomi Redmi A3 Pro / Xiaomi Redmi A5 / Xiaomi Poco C71 / Xiaomi Poco C75 / Xiaomi Poco C75 5G </b>", "height": 168, "width": 74.5, "photo_path": "photos/redmi 14c.png"},
+
+    {"model": "<b>Tecno Spark Go-2024 / Tecno Spark Go / Tecno Spark 20 / Tecno Spark 20C / Tecno Pop 8 / Infinix Smart 8 / Infinix Smart 8 HD / Infinix Smart 8 Pro / Infinix Smart 8 Plus / Infinix Hot 40i / Itel P55 / Itel P55 Plus / Itel P55T / Itel P55 5G / Itel Power 50 / Itel RS4 / Itel 24L / tel A70S / Itel S24</b>", "height": 160, "width": 72, "photo_path": "photos/Infinix hot 40i.png"},
+
+    {"model": "<b>Samsung a15 / Samsung a25 / Samsung M15 </b>", "height": 156, "width": 73, "photo_path": "photos/samsung a15.png"},
+
+    {"model": "<b>Samsung a35 / Samsung a55</b>", "height": 159, "width": 75, "photo_path": "photos/samsung a35.png"},
+
+    {"model": "<b>Vivo T3</b>", "height": 160, "width": 73, "photo_path": "photos/vivo t3.png"},
+
+    {"model": "<b>Vivo V23 5G</b>", "height": 155, "width": 70.5, "photo_path": "photos/vivo v23 5g.png"},
+
+
+
 
     {"model": "<b>Xiaomi 12 Lite/ Xiaomi Poco F4 Pro/ Xiaomi Poco X4 GT/ Xiaomi Redmi 10X 5G</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 2мм \nНижняя часть - 2.8мм \nБоковая рамка - 1.5мм", "height": 157, "width": 72, "photo_path": "photos/xiaomi x4 gt.png"},
 
     {"model": "<b>Xiaomi Redmi 10 5G/ Xiaomi Redmi 11/ Xiaomi Redmi 11 Prime/ Xiaomi Redmi 11 Prime 5G/ Xiaomi Redmi Note 11E/ Xiaomi Redmi note 11R/ Xiaomi Poco M5/ Xiaomi Poco M4 5G</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 2.25мм \nНижняя часть - 4.75мм \nБоковая рамка - 1.6мм", "height": 160, "width": 72, "photo_path": "photos/xiaomi poco m5.png"},
 
 
-    {"model": "<b>Xiaomi Redmi A1/ Xiaomi Redmi A1 Plus/ Xiaomi Redmi A2/ Xiaomi Redmi A2 Plus/ Xiaomi Poco C50</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 2.5мм \nНижняя часть - 6.4мм \nБоковая рамка - 1.9мм", "height": 160, "width": 72, "photo_path": "photos/redmi a1.png"},
+    {"model": "<b>Xiaomi Redmi A1/ Xiaomi Redmi A1 Plus/ Xiaomi Redmi A2/ Xiaomi Redmi A2 Plus/ Xiaomi Poco C50 / Xiaomi Poco C51 </b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 2.5мм \nНижняя часть - 6.4мм \nБоковая рамка - 1.9мм", "height": 160, "width": 72, "photo_path": "photos/redmi a1.png"},
+
+    {"model": "<b>Xiaomi Redmi A3/ Xiaomi Redmi A3x/ Xiaomi Poco C61</b>", "height": 164.5, "width": 72, "photo_path": "photos/redmi a3.png"},
 
 
     # {"model": "Xiaomi Pad 5", "height": 155, "width": 71},
@@ -497,7 +519,7 @@ glass_data9 = [
     {"model": "<b>Xiaomi Redmi Note 12 Pro/ Xiaomi Poco X5 Pro 5G/ Xiaomi Redmi Note 12 Pro Plus</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 2мм \nНижняя часть - 2.6мм \nБоковая рамка - 1.6мм", "height": 159.5, "width": 73.5, "photo_path": "photos/redmi note 12 pro.png"},
 
 
-    {"model": "<b>Xiaomi Poco F5/ Xiaomi Poco F5 Pro</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 2.4мм \nНижняя часть - 4.5мм \nБоковая рамка - 1.66мм", "height": 160, "width": 71, "photo_path": "photos/xiaomi poco f5.png"},
+    {"model": "<b>Xiaomi Poco F5/ Xiaomi Poco M6 Pro 4G/ Xiaomi Note 13 5G/ Xiaomi Redmi Note 13 Pro 4g</b> ", "height": 158.5, "width": 72.5, "photo_path": "photos/poco f5.png"},
 
 
     # {"model": "Xiaomi Pad 6", "height": 155, "width": 71},
@@ -506,6 +528,8 @@ glass_data9 = [
 
 
     {"model": "<b>Xiaomi Redmi Note 12/ Xiaomi Poco X5</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 2.1мм \nНижняя часть - 5.26мм \nБоковая рамка - 1.58мм", "height": 162, "width": 73, "photo_path": "photos/redmi note 12.png"},
+
+    {"model": "<b>Xiaomi Redmi Note 13 4G/ Xiaomi Redmi Note 14 4G/ Xiaomi Poco M7 Pro 5G</b>", "height": 159.5, "width": 73, "photo_path": "photos/xi_note_13.png"},
 
     {"model": "<b>Xiaomi Mi 10T 5G/ Xiaomi Mi 10T Pro 5G/ Xiaomi Redmi K30s</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 1.75мм \nНижняя часть - 4мм \nБоковая рамка - 1.6мм", "height": 160.5, "width": 73, "photo_path": "photos/xiaomi mi10t.png"},
 
@@ -651,7 +675,7 @@ glass_data9 = [
     #
     # {"model": "Huawei MediaPad M5 Lite 8.0", "height": 155, "width": 71},
 
-    {"model": "<b>Honor X8/ Honor x8a/ Honor X30i/ Honor X40i/ Honor X50i/ Huawei Nova Y90/ Honor 90 Lite</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 1.65мм \nНижняя часть - 4.3мм \nБоковая рамка - 1.2мм", "height": 160.5, "width": 72.5, "photo_path": "photos/honor x8.png"},
+    {"model": "<b>Honor X8/ Honor x8a/ Honor X30i/ Honor X40i/ Honor X50i/ Huawei Nova 12i/ Huawei Nova 13i/ Huawei Nova Y90/ Honor 90 Lite</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 1.65мм \nНижняя часть - 4.3мм \nБоковая рамка - 1.2мм", "height": 160.5, "width": 72.5, "photo_path": "photos/honor x8.png"},
 
     {"model": "<b>Huawei Nova Y91</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 7.6мм \nНижняя часть - 11мм \nБоковая рамка - 7.6мм", "height": 173, "width": 82, "photo_path": "photos/huawei nova y91.png"},
 
@@ -666,6 +690,12 @@ glass_data9 = [
     # {"model": "Huawei Nova 10 SE", "height": 155, "width": 71},
 
     {"model": "<b>Honor X6/ Honor X6s/ Honor X6a/ Honor X5 Plus/ Honor X8 5G/ Honor 70 Lite</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 2.6мм \nНижняя часть - 6.7мм \nБоковая рамка - 2.0мм", "height": 160, "width": 72, "photo_path": "photos/honor x6.png"},
+
+    {"model": "<b>Honor X6c</b>", "height": 161, "width": 72.5, "photo_path": "photos/honor x6.png"},
+
+    {"model": "<b>Honor X7b / Honor X7c / Honor 90 Smart / Honor 200 Smart 5G</b>", "height": 164, "width": 74, "photo_path": "photos/honor x7b.png"},
+
+    {"model": "<b>Honor X8b / Honor X8c / Honor 200 lite</b>", "height": 159, "width": 72.5, "photo_path": "photos/honor x8b.png"},
 
 
     # {"model": "Huawei MatePad SE", "height": 155, "width": 71},
@@ -683,7 +713,7 @@ glass_data9 = [
 
     # {"model": "Huawei P60", "height": 155, "width": 71},
     #
-    # {"model": "Huawei Nova 11", "height": 155, "width": 71},
+    {"model": "Huawei Nova 11 / Huawei Nova 12s / Huawei Nova 13", "height": 159, "width": 73, "photo_path": "photos/honor x6c.png"},
     #
     # {"model": "Huawei Nova 11i", "height": 155, "width": 71},
     #
@@ -810,7 +840,15 @@ glass_data9 = [
 
     # {"model": "Realme X4 GT", "height": 155, "width": 71},
 
+    {"model": "Poco X4 GT", "height": 160, "width": 71, "photo_path": "photos/poco x4 gt.png"},
+
     {"model": "<b>Realme 10 Pro</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 1.0мм \nНижняя часть - 4.0мм \nБоковая рамка - 1.0мм", "height": 161, "width": 72, "photo_path": "photos/realme 10 pro.png"},
+
+    {"model": "Xiaomi 13T", "height": 159.5, "width": 73.5, "photo_path": "photos/xiaomi 13t.png"},
+
+    {"model": "Xiaomi 14", "height": 151, "width": 69.5, "photo_path": "photos/xiaomi 14.png"},
+
+    {"model": "Poco F7", "height": 160.5, "width": 75.5, "photo_path": "photos/poco f7.png"},
 
     # {"model": "Oppo A17", "height": 155, "width": 71},
     # {"model": "Oppo A17K", "height": 155, "width": 71},
@@ -934,7 +972,7 @@ glass_data9 = [
 
     {"model": "<b>Vivo V20</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 2.2мм \nНижняя часть - 5.3мм \nБоковая рамка - 1.7мм", "height": 156.5, "width": 70.5},
 
-    {"model": "<b>Vivo V21E</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 2.5мм \nНижняя часть - 5.4мм \nБоковая рамка - 2.0мм", "height": 156.5, "width": 70.5},
+    {"model": "<b>Vivo V21E</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 2.5мм \nНижняя часть - 5.4мм \nБоковая рамка - 2.0мм", "height": 157, "width": 70.5},
 
     {"model": "<b>Vivo T2</b> \nШирина закрашенной рамки стекла: \nВерхняя часть - 2.47мм \nНижняя часть - 6.0мм \nБоковая рамка - 1.5мм", "height": 160.5, "width": 73, "photo_path": "photos/vivo t2.png"},
 

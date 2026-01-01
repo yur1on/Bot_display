@@ -7,6 +7,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 import config
 from config import ADMIN_ID
+import json
 
 from baza import glass_data, glass_data2, glass_data3, glass_data4, glass_data5, glass_data6, glass_data7
 from baza2 import glass_data9
@@ -196,122 +197,171 @@ class UserSizeSearch(StatesGroup):
     width = State()
 
 
-# Добавляем новый обработчик команды/кнопки для инициирования поиска по размерам
-@dp.message_handler(lambda message: message.text == '/size')
-async def start_size_search(message: types.Message, state: FSMContext):
-
+@dp.message_handler(content_types=types.ContentType.WEB_APP_DATA)
+async def handle_size_webapp(message: types.Message, state: FSMContext):
     chat_id = message.chat.id
-    user_message = message.text
 
-    # Сохранение сообщения в базу данных
-    cursor.execute("INSERT INTO messages (chat_id, message_text) VALUES (?, ?)", (chat_id, user_message))
-    conn.commit()
-    # Проверяем, зарегистрирован ли пользователь
+    # Проверяем регистрацию так же как у вас в /size
     user_info = get_user_info(chat_id)
     if not user_info:
-        await bot.send_message(chat_id, "Для пользования ботом пожалуйста зарегистрируйтесь! \nИспользуйте команду 👉  /registration ")
+        await bot.send_message(
+            chat_id,
+            "Для пользования ботом пожалуйста зарегистрируйтесь! \nИспользуйте команду 👉  /registration "
+        )
         return
-    await bot.send_message(chat_id, "🔘Эта функция по введенному Вами запросу (длина и ширина), покажет стекла с одинаковыми размерами. \n🔘Точность измерения проводилась с округлением до <b>0.5мм</b>.\nБаза каждый день наполняеться.  \n\n<b>Введите длину стекла 📱в мм:</b>\nПример ввода: 155 или 155,5", parse_mode='html')
-    # Установка состояние для обработки введенных значений
-    await UserSizeSearch.height.set()
+
+    # Достаём JSON из формы
+    try:
+        data = json.loads(message.web_app_data.data)  # ожидаем {"height":"155,5","width":"72"}
+        height = float(str(data.get("height", "")).replace(",", "."))
+        width  = float(str(data.get("width", "")).replace(",", "."))
+    except Exception:
+        await bot.send_message(chat_id, "Некорректный формат. Введите длину и ширину числами (можно с запятой).")
+        return
+
+    # Ваш поиск
+    found_glasses9 = perform_size_search(height, width)
+
+    if found_glasses9:
+        await bot.send_message(
+            chat_id,
+            f"<em><u>Стекла по размерам {height}x{width} найдено:</u></em>",
+            parse_mode="HTML"
+        )
+
+        for glass9 in found_glasses9:
+            model = glass9["model"]
+            photo_path = glass9.get("photo_path")
+
+            if photo_path:
+                with open(photo_path, "rb") as photo:
+                    await bot.send_photo(chat_id, photo, caption=f"<b>Модель:</b> {model}", parse_mode="HTML")
+            else:
+                await bot.send_message(chat_id, f"<b>Модель:</b> {model}", parse_mode="HTML")
+    else:
+        await bot.send_message(
+            chat_id,
+            "🔘По указанным размерам ничего не найдено!\n 🔘Побрубуйте увеличить или уменьшить размер в запросе на 0,5мм"
+        )
+
+
 
 # Добавляем новый обработчик команды/кнопки для инициирования поиска по размерам
-@dp.message_handler(lambda message: message.text == '🔎подбор стекла по размеру')
-async def start_size_search(message: types.Message, state: FSMContext):
-    chat_id = message.chat.id
-    user_message = message.text
-
-    # Сохранение сообщения в базу данных
-    cursor.execute("INSERT INTO messages (chat_id, message_text) VALUES (?, ?)", (chat_id, user_message))
-    conn.commit()
-    # Проверяем, зарегистрирован ли пользователь
-    user_info = get_user_info(chat_id)
-    if not user_info:
-        await bot.send_message(chat_id, "Для пользования ботом пожалуйста зарегистрируйтесь! \nИспользуйте команду 👉  /registration ")
-        return
-    await bot.send_message(chat_id, "🔘Эта функция по введенному Вами запросу (длина и ширина), покажет стекла с одинаковыми размерами. \n🔘Точность измерения проводилась с округлением до <b>0.5мм</b>.\nБаза каждый день наполняеться.  \n\n<b>Введите длину стекла 📱в мм:</b>\nПример ввода: 155 или 155,5", parse_mode='html')
-    # Установка состояние для обработки введенных значений
-    await UserSizeSearch.height.set()
-
+# @dp.message_handler(lambda message: message.text == '/size')
+# async def start_size_search(message: types.Message, state: FSMContext):
+#
+#     chat_id = message.chat.id
+#     user_message = message.text
+#
+#     # Сохранение сообщения в базу данных
+#     cursor.execute("INSERT INTO messages (chat_id, message_text) VALUES (?, ?)", (chat_id, user_message))
+#     conn.commit()
+#     # Проверяем, зарегистрирован ли пользователь
+#     user_info = get_user_info(chat_id)
+#     if not user_info:
+#         await bot.send_message(chat_id, "Для пользования ботом пожалуйста зарегистрируйтесь! \nИспользуйте команду 👉  /registration ")
+#         return
+#     await bot.send_message(chat_id, "🔘Эта функция по введенному Вами запросу (длина и ширина), покажет стекла с одинаковыми размерами. \n🔘Точность измерения проводилась с округлением до <b>0.5мм</b>.\nБаза каждый день наполняеться.  \n\n<b>Введите длину стекла 📱в мм:</b>\nПример ввода: 155 или 155,5", parse_mode='html')
+#     # Установка состояние для обработки введенных значений
+#     await UserSizeSearch.height.set()
+#
+# # Добавляем новый обработчик команды/кнопки для инициирования поиска по размерам
+# @dp.message_handler(lambda message: message.text == '🔎подбор стекла по размеру')
+# async def start_size_search(message: types.Message, state: FSMContext):
+#     chat_id = message.chat.id
+#     user_message = message.text
+#
+#     # Сохранение сообщения в базу данных
+#     cursor.execute("INSERT INTO messages (chat_id, message_text) VALUES (?, ?)", (chat_id, user_message))
+#     conn.commit()
+#     # Проверяем, зарегистрирован ли пользователь
+#     user_info = get_user_info(chat_id)
+#     if not user_info:
+#         await bot.send_message(chat_id, "Для пользования ботом пожалуйста зарегистрируйтесь! \nИспользуйте команду 👉  /registration ")
+#         return
+#     await bot.send_message(chat_id, "🔘Эта функция по введенному Вами запросу (длина и ширина), покажет стекла с одинаковыми размерами. \n🔘Точность измерения проводилась с округлением до <b>0.5мм</b>.\nБаза каждый день наполняеться.  \n\n<b>Введите длину стекла 📱в мм:</b>\nПример ввода: 155 или 155,5", parse_mode='html')
+#     # Установка состояние для обработки введенных значений
+#     await UserSizeSearch.height.set()
+#
 
 # Обработчик ввода высоты
-@dp.message_handler(state=UserSizeSearch.height)
-async def process_height(message: types.Message, state: FSMContext):
-    chat_id = message.chat.id
-    user_message = message.text
-
-    # Сохранение сообщения в базу данных
-    cursor.execute("INSERT INTO messages (chat_id, message_text) VALUES (?, ?)", (chat_id, user_message))
-    conn.commit()
-
-    try:
-        # Замена запятой на точку и преобразование в число
-        height = float(message.text.replace(',', '.'))
-
-        # Сохранения значения высоты в контексте состояния
-        await state.update_data(height=height)
-
-        # Запрос у пользователя значение ширины
-        await bot.send_message(chat_id, "<b>Теперь введите ширину ↔📱 в мм:</b>", parse_mode='html')
-        await UserSizeSearch.width.set()
-    except ValueError:
-        await bot.send_message(chat_id, "Некорректный формат ввода размера стекла! Пожалуйста, введите число.\n\n<b>Введите длину стекла 📱в мм:</b>\nПример ввода: 155 или 155,5", parse_mode='html')
-
-
-# Обработчик ввода ширины
-@dp.message_handler(state=UserSizeSearch.width)
-async def process_width(message: types.Message, state: FSMContext):
-    chat_id = message.chat.id
-    user_message = message.text
-
-    # Сохранение сообщения в базу данных
-    cursor.execute("INSERT INTO messages (chat_id, message_text) VALUES (?, ?)", (chat_id, user_message))
-    conn.commit()
-
-    try:
-        # Замените запятую на точку и преобразуйте в число
-        width = float(message.text.replace(',', '.'))
-
-        # Получите значение высоты из контекста состояния
-        user_data = await state.get_data()
-        height = user_data.get('height')
-
-        # Выполните поиск по размерам
-        found_glasses9 = perform_size_search(height, width)
-
-        if found_glasses9:
-            response_header = f"<em><u>Стекла по размерам {height}x{width} найдено:</u></em>\n"
-
-            # Отправляем текст только один раз перед циклом
-            await bot.send_message(chat_id, response_header, parse_mode='HTML')
-
-            for glass9 in found_glasses9:
-                model = glass9['model']
-                photo_path = glass9['photo_path']
-
-                if photo_path:
-                    # Загружаем фотографию в виде обычного вложения
-                    with open(photo_path, 'rb') as photo:
-                        # Создаем сообщение с текстом и фото
-                        await bot.send_photo(chat_id, photo, caption=f"<b>Модель:</b> {model}", parse_mode='HTML')
-                else:
-                    # Если фото нет, просто отправляем текстовое сообщение
-                    await bot.send_message(chat_id, f"<b>Модель:</b> {model}", parse_mode='HTML')
-
-            user_info = get_user_info(chat_id)
-            if user_info:
-                await UserSizeSearch.height.set()
-            else:
-                await bot.send_message(chat_id, "Для использования поиска по размерам, сначала зарегистрируйтесь! Используйте команду /registration")
-        else:
-            await bot.send_message(chat_id, "🔘По указанным размерам ничего не найдено!\n 🔘Побрубуйте увеличить или уменьшить размер в запросе на 0,5мм")
-
-        # Завершите состояние
-        await state.finish()
-    except ValueError:
-        await bot.send_message(chat_id, "Некорректный формат ввода!\nПожалуйста, введите число.")
-
-
+# @dp.message_handler(state=UserSizeSearch.height)
+# async def process_height(message: types.Message, state: FSMContext):
+#     chat_id = message.chat.id
+#     user_message = message.text
+#
+#     # Сохранение сообщения в базу данных
+#     cursor.execute("INSERT INTO messages (chat_id, message_text) VALUES (?, ?)", (chat_id, user_message))
+#     conn.commit()
+#
+#     try:
+#         # Замена запятой на точку и преобразование в число
+#         height = float(message.text.replace(',', '.'))
+#
+#         # Сохранения значения высоты в контексте состояния
+#         await state.update_data(height=height)
+#
+#         # Запрос у пользователя значение ширины
+#         await bot.send_message(chat_id, "<b>Теперь введите ширину ↔📱 в мм:</b>", parse_mode='html')
+#         await UserSizeSearch.width.set()
+#     except ValueError:
+#         await bot.send_message(chat_id, "Некорректный формат ввода размера стекла! Пожалуйста, введите число.\n\n<b>Введите длину стекла 📱в мм:</b>\nПример ввода: 155 или 155,5", parse_mode='html')
+#
+#
+# # Обработчик ввода ширины
+# @dp.message_handler(state=UserSizeSearch.width)
+# async def process_width(message: types.Message, state: FSMContext):
+#     chat_id = message.chat.id
+#     user_message = message.text
+#
+#     # Сохранение сообщения в базу данных
+#     cursor.execute("INSERT INTO messages (chat_id, message_text) VALUES (?, ?)", (chat_id, user_message))
+#     conn.commit()
+#
+#     try:
+#         # Замените запятую на точку и преобразуйте в число
+#         width = float(message.text.replace(',', '.'))
+#
+#         # Получите значение высоты из контекста состояния
+#         user_data = await state.get_data()
+#         height = user_data.get('height')
+#
+#         # Выполните поиск по размерам
+#         found_glasses9 = perform_size_search(height, width)
+#
+#         if found_glasses9:
+#             response_header = f"<em><u>Стекла по размерам {height}x{width} найдено:</u></em>\n"
+#
+#             # Отправляем текст только один раз перед циклом
+#             await bot.send_message(chat_id, response_header, parse_mode='HTML')
+#
+#             for glass9 in found_glasses9:
+#                 model = glass9['model']
+#                 photo_path = glass9['photo_path']
+#
+#                 if photo_path:
+#                     # Загружаем фотографию в виде обычного вложения
+#                     with open(photo_path, 'rb') as photo:
+#                         # Создаем сообщение с текстом и фото
+#                         await bot.send_photo(chat_id, photo, caption=f"<b>Модель:</b> {model}", parse_mode='HTML')
+#                 else:
+#                     # Если фото нет, просто отправляем текстовое сообщение
+#                     await bot.send_message(chat_id, f"<b>Модель:</b> {model}", parse_mode='HTML')
+#
+#             user_info = get_user_info(chat_id)
+#             if user_info:
+#                 await UserSizeSearch.height.set()
+#             else:
+#                 await bot.send_message(chat_id, "Для использования поиска по размерам, сначала зарегистрируйтесь! Используйте команду /registration")
+#         else:
+#             await bot.send_message(chat_id, "🔘По указанным размерам ничего не найдено!\n 🔘Побрубуйте увеличить или уменьшить размер в запросе на 0,5мм")
+#
+#         # Завершите состояние
+#         await state.finish()
+#     except ValueError:
+#         await bot.send_message(chat_id, "Некорректный формат ввода!\nПожалуйста, введите число.")
+#
+#
 
 # class UserRegistration(StatesGroup):
 #     name = State()
@@ -338,15 +388,38 @@ async def delete_registration(message: types.Message):
 
 
 
+
+
 async def create_menu_button():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
+
     start_button = types.KeyboardButton('🚀 start')
     registration_button = types.KeyboardButton('🗂registration')
     help_button = types.KeyboardButton('ℹ️ Info')
-   #size_search_button = types.KeyboardButton('🔎подбор стекла по размеру')
-    markup.add(start_button, registration_button, help_button,) #size_search_button)
+
+    size_button = types.KeyboardButton(
+        '🔎подбор стекла по размеру',
+        web_app=types.WebAppInfo(url=config.WEBAPP_URL)
+    )
+
+    markup.add(start_button, registration_button, help_button)
+    markup.add(size_button)
     return markup
 
+
+from aiogram import types
+import config
+
+@dp.message_handler(commands=['size'])
+async def size_cmd(message: types.Message):
+    kb = types.InlineKeyboardMarkup()
+    kb.add(
+        types.InlineKeyboardButton(
+            "🔎 Открыть поиск по размерам",
+            web_app=types.WebAppInfo(url=config.WEBAPP_URL)
+        )
+    )
+    await message.answer("Нажмите кнопку, чтобы открыть форму:", reply_markup=kb)
 
 
 
@@ -738,17 +811,22 @@ async def handle_text(message, state: FSMContext):
             )
 
         else:
+            kb_size = types.InlineKeyboardMarkup()
+            kb_size.add(
+                types.InlineKeyboardButton(
+                    "🔎 Подобрать стекло по размерам",
+                    web_app=types.WebAppInfo(url=config.WEBAPP_URL)
+                )
+            )
+
             await bot.send_message(
                 chat_id,
-
                 "<em><b>По Вашему запросу ничего не найдено!</b>\n"
-
-                "1️⃣ Проверте ошибки при написании модели.\n"
-
-                "2️⃣ Попробуйте ввести полное название модели. Пример: Realme Narzo 50i</em>\n\n",
-
-                parse_mode='html'
-
+                "1️⃣ Проверьте ошибки при написании модели.\n"
+                "2️⃣ Попробуйте ввести полное название модели. Пример: Realme Narzo 50i\n"
+                "3️⃣ Или подберите стекло по размерам (длина × ширина) — нажмите кнопку ниже.</em>\n",
+                parse_mode='html',
+                reply_markup=kb_size
             )
 
         @dp.callback_query_handler(lambda query: query.data.startswith('photo:'))
