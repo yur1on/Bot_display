@@ -301,7 +301,7 @@ glass_data = [
     ("samsung m15", ["Samsung A15 (A155)", "Samsung A25 (A256)", "Samsung M15 (M156)", "<b>Display: Hard OLED </b>", "samsung a15.png"]),
     ("samsung m156", ["Samsung A15 (A155)", "Samsung A25 (A256)", "Samsung M15 (M156)", "<b>Display: Hard OLED </b>", "samsung a15.png"]),
     ("m15", ["Samsung A15 (A155)", "Samsung A25 (A256)", "Samsung M15 (M156)", "<b>Display: Hard OLED </b>", "samsung a15.png"]),
-    
+
     ("m156", ["Samsung A15 (A155)", "Samsung A25 (A256)", "Samsung M15 (M156)", "<b>Display: Hard OLED </b>", "samsung a15.png"]),
 
     ("Samsung A16 4G", ["Samsung A16 4G A165", "Samsung A16 5G A166", "Samsung A17 4G A175", "Samsung A17 5G A176", "Samsung A26 A266", "<b>Display: Hard OLED </b>"]),
