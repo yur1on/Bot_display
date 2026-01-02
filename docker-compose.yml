@@ -1,0 +1,10 @@
+# docker-compose.yml
+version: "3.8"
+services:
+  bot_display:
+    build: .
+    container_name: bot_display
+    restart: always
+    volumes:
+      - ./data:/app/data   # важный момент: база хранится на хосте
+    # network_mode: "bridge"   # не обязательно
