@@ -9,21 +9,24 @@ import os
 import sys
 from pathlib import Path
 import sqlite3
+import traceback
 
 import config
-from config import DB_PATH, ADMIN_ID, WEBAPP_URL  # DB_PATH должен быть Path или строкой
-# если в config.py токен хранится в переменной tok, используем config.tok
+from config import DB_PATH, ADMIN_ID, WEBAPP_URL
+
+# токен в config.tok (или config.BOT_TOKEN)
 TOK = getattr(config, "tok", None)
 if not TOK:
-    print("❌ BOT token not found in config.tok or BOT_TOKEN env. Set it.")
-    # не завершаем, но бот не заработает без токена
+    print("❌ BOT token not found in config.tok. Set it and restart.")
 
-# подключаем словари/данные
-from baza import glass_data, glass_data2, glass_data3, glass_data4, glass_data5, glass_data6, glass_data7
+# импорт данных
+from baza import (
+    glass_data, glass_data2, glass_data3, glass_data4,
+    glass_data5, glass_data6, glass_data7
+)
 from baza2 import glass_data9
 
 # --- Проверка и открытие sqlite соединения (глобально) ---
-# DB_PATH может быть Path или строка
 DB_PATH = Path(DB_PATH)
 print("🗄 DB_PATH:", DB_PATH)
 
@@ -37,24 +40,23 @@ if not DB_PATH.exists():
     sys.exit(1)
 
 try:
-    # mode=rw — не создаст новую базу если её нет, и позволяет чтение-запись
     conn = sqlite3.connect(f"file:{DB_PATH}?mode=rw", uri=True, check_same_thread=False)
     cursor = conn.cursor()
     print("✅ Connected to SQLite DB (rw).")
 except Exception as e:
     print("❌ Failed to open DB:", e)
+    traceback.print_exc()
     sys.exit(1)
 
 # --- Инициализация бота и диспетчера ---
 bot = Bot(TOK)
 dp = Dispatcher(bot, storage=MemoryStorage())
 
-# Если нужно — создаём таблицы только если их нет (на случай частичного дампа)
-# Эти запросы безопасно выполнятся если таблицы уже существуют.
+# создаём таблицы при отсутствии
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY,
-        chat_id INTEGER,
+        chat_id INTEGER UNIQUE,
         name TEXT,
         city TEXT,
         phone_number TEXT
@@ -84,15 +86,18 @@ def is_user_blocked(user_id):
     cursor.execute('SELECT 1 FROM blocked_users WHERE user_id = ?', (user_id,))
     return cursor.fetchone() is not None
 
+
 def get_user_info(chat_id):
     cursor.execute("SELECT name, city, phone_number FROM users WHERE chat_id=?", (chat_id,))
     return cursor.fetchone()
+
 
 def get_belarusian_chat_ids():
     cursor.execute("SELECT chat_id, city FROM users")
     users = cursor.fetchall()
     belarusian_chat_ids = [chat_id for chat_id, city in users if city and city.lower() in belarusian_cities]
     return belarusian_chat_ids
+
 
 async def send_updates_to_all_users(bot_instance, message_text):
     chat_ids = get_belarusian_chat_ids()
@@ -101,6 +106,7 @@ async def send_updates_to_all_users(bot_instance, message_text):
             await bot_instance.send_message(chat_id, message_text)
         except Exception as e:
             print(f"Ошибка при отправке сообщения пользователю {chat_id}: {e}")
+
 
 def save_message_to_db(chat_id, text):
     try:
@@ -127,13 +133,6 @@ belarusian_cities = [
     "lida", "лида",
     "novopolotsk", "новополоцк",
     "polotsk", "полоцк",
-    "кобрин", "инск",
-    "мин", "ошмяны",
-    "слуцк", "житковичи",
-    "rechitsa", "речица",
-    "ошмяны", "novokuznetsk",
-    "толочин", "микашевичи",
-    "пружаны"
 ]
 
 # ----------------- Хэндлеры / команды -----------------
@@ -148,6 +147,7 @@ async def block_user(message: types.Message):
     except (IndexError, ValueError):
         await message.reply("Используйте команду в формате: /block <user_id>")
 
+
 @dp.message_handler(commands=['unblock'], user_id=ADMIN_ID)
 async def unblock_user_command(message: types.Message):
     try:
@@ -158,18 +158,19 @@ async def unblock_user_command(message: types.Message):
     except (IndexError, ValueError):
         await message.reply("Используйте команду в формате: /unblock <user_id>")
 
+
 @dp.message_handler(commands=['send'])
 async def send_updates_command(message: types.Message):
     if message.from_user.id == ADMIN_ID:
         message_text = ("Друзья! Представляем новый проект — mobirazbor.by :\n"
                         "платформа для разборщиков мобильной техники,\n"
                         "удобный сервис для учёта и поиска запчастей мобильной техники.\n"
-                        "🔹Личный склад\n🔹Умный поиск по всей базе\n🔹Поддержка фото, описаний, отзывов и связи между пользователями\n"
-                        "📢Присоединяйтесь к Telegram-каналу: t.me/MobiraRazbor\nСледите за развитием платформы и обновлениями.")
+                        "🔹Личный склад\n🔹Умный поиск по всей базе\n🔹Поддержка фото, описаний, отзывов и связи между пользователями\n")
         await send_updates_to_all_users(bot, message_text)
         await message.answer("Сообщение отправлено всем зарегистрированным пользователям.")
     else:
         await message.answer("У вас нет прав для отправки сообщений.")
+
 
 @dp.message_handler(commands=['send_to_user'])
 async def send_to_user_command(message: types.Message):
@@ -184,12 +185,14 @@ async def send_to_user_command(message: types.Message):
     else:
         await message.answer("У вас нет прав для отправки сообщений.")
 
+
 @dp.message_handler(commands=['delete_registration'])
 async def delete_registration(message: types.Message):
     chat_id = message.chat.id
     cursor.execute("DELETE FROM users WHERE chat_id=?", (chat_id,))
     conn.commit()
     await bot.send_message(chat_id, "Ваши регистрационные данные успешно удалены. Для повторной регистрации используйте команду /registration")
+
 
 async def create_menu_button():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
@@ -206,17 +209,26 @@ async def create_menu_button():
     markup.add(size_button)
     return markup
 
+
 @dp.message_handler(commands=['size'])
 async def size_cmd(message: types.Message):
-    kb = types.InlineKeyboardMarkup()
-    kb.add(types.InlineKeyboardButton("🔎 Открыть поиск по размерам", web_app=types.WebAppInfo(url=WEBAPP_URL)))
-    await message.answer("Нажмите кнопку, чтобы открыть форму:", reply_markup=kb)
+    await message.answer(
+        "🔎 <b>Подбор стекла по размерам</b>\n\n"
+        "Для подбора стекла:\n"
+        "👇 <b>нажмите кнопку внизу меню</b>\n"
+        "«🔎подбор стекла по размеру»",
+        parse_mode="html",
+        reply_markup=await create_menu_button()
+    )
+
+
 
 # ----------------- Регистрация -----------------
 class UserRegistration(StatesGroup):
     name = State()
     city = State()
     phone_number = State()
+
 
 @dp.message_handler(state=UserRegistration.name)
 async def register_name(message: types.Message, state: FSMContext):
@@ -226,10 +238,12 @@ async def register_name(message: types.Message, state: FSMContext):
     await UserRegistration.city.set()
     await bot.send_message(chat_id, "Введите Ваш город:", reply_markup=await create_menu_button())
 
+
 @dp.message_handler(lambda message: message.text.isdigit(), state=UserRegistration.city)
 async def register_invalid_city(message: types.Message):
     chat_id = message.chat.id
     await bot.send_message(chat_id, "Некорректно введен город!")
+
 
 @dp.message_handler(state=UserRegistration.city)
 async def register_city(message: types.Message, state: FSMContext):
@@ -239,10 +253,12 @@ async def register_city(message: types.Message, state: FSMContext):
     await UserRegistration.phone_number.set()
     await bot.send_message(chat_id, "Введите Ваш номер телефона:")
 
+
 @dp.message_handler(lambda message: not message.text.isdigit(), state=UserRegistration.phone_number)
 async def register_invalid_phone(message: types.Message):
     chat_id = message.chat.id
     await bot.send_message(chat_id, "Номер телефона должен содержать только цифры. Пожалуйста, введите корректный номер телефона.")
+
 
 @dp.message_handler(lambda message: message.text.isdigit(), state=UserRegistration.phone_number)
 async def register_phone_number(message: types.Message, state: FSMContext):
@@ -253,7 +269,7 @@ async def register_phone_number(message: types.Message, state: FSMContext):
     city = user_data.get('city')
 
     try:
-        cursor.execute("INSERT INTO users (chat_id, name, city, phone_number) VALUES (?, ?, ?, ?)",
+        cursor.execute("INSERT OR REPLACE INTO users (chat_id, name, city, phone_number) VALUES (?, ?, ?, ?)",
                        (chat_id, name, city, phone_number))
         conn.commit()
     except Exception as e:
@@ -265,6 +281,7 @@ async def register_phone_number(message: types.Message, state: FSMContext):
     await state.finish()
     await bot.send_message(chat_id, "Регистрация успешно завершена!\n\nВведите модель стекла телефона или планшета, которое вы ищите.\n\n Изучите информацию и откройте доп. кнопки 👉 /info")
 
+
 @dp.message_handler(commands=['registration'])
 async def start_message(message: types.Message, state: FSMContext):
     chat_id = message.chat.id
@@ -275,6 +292,7 @@ async def start_message(message: types.Message, state: FSMContext):
     else:
         await bot.send_message(chat_id, "Здравствуйте!\nВведите свое имя для регистрации:")
         await UserRegistration.name.set()
+
 
 @dp.message_handler(lambda message: message.text == '🗂registration')
 async def registration_button_handler(message: types.Message, state: FSMContext):
@@ -288,9 +306,11 @@ async def registration_button_handler(message: types.Message, state: FSMContext)
         await bot.send_message(chat_id, "Здравствуйте!\nВведите свое имя для регистрации:")
         await UserRegistration.name.set()
 
+
 async def send_message_with_ad(chat_id, text, reply_markup=None, parse_mode='html'):
     ad_text = "\n\nmobirazbor.by"
     await bot.send_message(chat_id, text + ad_text, reply_markup=reply_markup, parse_mode=parse_mode)
+
 
 @dp.message_handler(commands=['start'])
 async def start_cmd(message: types.Message):
@@ -302,6 +322,7 @@ async def start_cmd(message: types.Message):
     else:
         await send_message_with_ad(chat_id, "Это бот для поиска взаимозаменяемых стекол для переклейки.\nДля пользования ботом, пожалуйста, зарегистрируйтесь! Используйте команду /registration")
 
+
 @dp.message_handler(lambda message: message.text == '🚀 start')
 async def start_button_handler(message: types.Message):
     chat_id = message.chat.id
@@ -311,6 +332,7 @@ async def start_button_handler(message: types.Message):
         await bot.send_message(chat_id, f"Привет👋, @{message.from_user.username}\n Введите модель стекла телефона или планшета, которое вы ищете.\n Изучите информацию и откройте доп. кнопки 👉 /info")
     else:
         await bot.send_message(chat_id, "Это бот для поиска взаимозаменяемых стекол для переклейки.\nДля пользования ботом, пожалуйста, зарегистрируйтесь! Используйте команду /registration")
+
 
 @dp.message_handler(commands=['info'])
 async def handle_info(message):
@@ -324,6 +346,7 @@ async def handle_info(message):
                            "✔️Если нашли ошибку или знаете взаимозаменяемую модель стекла, напишите пожалуйста @expert_glass_lcd \n",
                            reply_markup=await create_menu_button())
 
+
 @dp.message_handler(lambda message: message.text == 'ℹ️ Info')
 async def info_button_handler(message: types.Message):
     chat_id = message.chat.id
@@ -334,6 +357,7 @@ async def info_button_handler(message: types.Message):
 class UserSizeSearch(StatesGroup):
     height = State()
     width = State()
+
 
 @dp.message_handler(content_types=types.ContentType.WEB_APP_DATA)
 async def handle_size_webapp(message: types.Message, state: FSMContext):
@@ -355,7 +379,7 @@ async def handle_size_webapp(message: types.Message, state: FSMContext):
     if found_glasses9:
         await bot.send_message(chat_id, f"<em><u>Стекла по размерам {height}x{width} найдено:</u></em>", parse_mode="HTML")
         for glass9 in found_glasses9:
-            model = glass9["model"]
+            model = glass9.get("model")
             photo_path = glass9.get("photo_path")
             if photo_path and os.path.exists(photo_path):
                 with open(photo_path, "rb") as photo:
@@ -365,14 +389,18 @@ async def handle_size_webapp(message: types.Message, state: FSMContext):
     else:
         await bot.send_message(chat_id, "🔘По указанным размерам ничего не найдено!\n 🔘Побрубуйте увеличить или уменьшить размер в запросе на 0,5мм")
 
+
 def perform_size_search(height, width):
     found_glasses9 = []
     for glass9 in glass_data9:
-        if glass9.get("height") == height and glass9.get("width") == width:
-            found_glasses9.append({
-                "model": glass9.get('model'),
-                "photo_path": glass9.get('photo_path', None)
-            })
+        try:
+            if float(glass9.get("height")) == float(height) and float(glass9.get("width")) == float(width):
+                found_glasses9.append({
+                    "model": glass9.get('model'),
+                    "photo_path": glass9.get('photo_path', None)
+                })
+        except Exception:
+            continue
     return found_glasses9
 
 # ----------------- Основной текстовый обработчик -----------------
@@ -397,7 +425,6 @@ async def handle_text(message, state: FSMContext):
     if 'galaxy' in user_message_lower:
         await bot.send_message(chat_id, "Повторите пожалуйста запрос не используя слово <b>galaxy</b>.", parse_mode='html')
         return
-    # исправления опечаток
     if 'realmi' in user_message_lower:
         await bot.send_message(chat_id, "❗️Исправте в запросе слово <u>realmi</u> на правильное написание <b>realme</b>.", parse_mode='html')
         return
@@ -419,7 +446,7 @@ async def handle_text(message, state: FSMContext):
         await bot.send_message(chat_id, "Для пользования ботом пожалуйста зарегистрируйтесь! \nИспользуйте команду 👉  /registration ")
         return
 
-    # поиск по словарям (как было)
+    # поиск по словарям
     found_glasses = []
     found_glasses2 = []
     found_glasses3 = []
@@ -471,7 +498,6 @@ async def handle_text(message, state: FSMContext):
         'Сайт: <a href="https://mobirazbor.by">mobirazbor.by</a>'
     )
 
-    # ответы
     if found_glasses5:
         response = f"<em>Я знаю многое о продукции<b> {user_message}</b>. Укажите конкретную модель!</em>\n"
         response += "\n".join(found_glasses5)
@@ -483,7 +509,6 @@ async def handle_text(message, state: FSMContext):
         await bot.send_message(chat_id, response, parse_mode='html')
         return
 
-    # Формируем клавиатуры и сообщения для найденных списков
     def send_found_list(chat, found_list):
         keyboard = types.InlineKeyboardMarkup()
         response = f"<em><u>Взаимозаменяемые стекла по поиску 🔍<b>'{user_message}'</b> найдено:</u></em>\n"
@@ -521,21 +546,22 @@ async def handle_text(message, state: FSMContext):
         handled = True
 
     if not handled:
-        kb_size = types.InlineKeyboardMarkup()
-        kb_size.add(types.InlineKeyboardButton("🔎 Подобрать стекло по размерам", web_app=types.WebAppInfo(url=WEBAPP_URL)))
-        await bot.send_message(chat_id,
-                               "<em><b>По Вашему запросу ничего не найдено!</b>\n"
-                               "1️⃣ Проверьте ошибки при написании модели.\n"
-                               "2️⃣ Попробуйте ввести полное название модели. Пример: Realme Narzo 50i\n"
-                               "3️⃣ Или подберите стекло по размерам (длина × ширина) — нажмите кнопку ниже.</em>\n",
-                               parse_mode='html',
-                               reply_markup=kb_size)
+        await bot.send_message(
+            chat_id,
+            "<em><b>По Вашему запросу ничего не найдено!</b>\n\n"
+            "1️⃣ Проверьте ошибки при написании модели.\n"
+            "2️⃣ Попробуйте ввести полное название модели.\n\n"
+            "🔎 <b>Вы можете подобрать стекло по размерам</b>\n"
+            "👇 <b>нажмите кнопку внизу меню</b>\n"
+            "«🔎подбор стекла по размеру»</em>",
+            parse_mode="html",
+            reply_markup=await create_menu_button()
+        )
 
-# единый callback handler для фото (обрабатывает все photo:... callback_data)
+
 @dp.callback_query_handler(lambda query: query.data and query.data.startswith('photo:'))
 async def process_photo_callback(callback_query: types.CallbackQuery):
     photo_name = callback_query.data.split(':', 1)[1]
-    # разные папки в проекте — пробуем несколько вариантов
     possible_paths = [f"photos1/{photo_name}", f"photos/{photo_name}", photo_name]
     photo_path = None
     for p in possible_paths:
