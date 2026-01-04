@@ -1,10 +1,10 @@
 # app.py
 from aiogram import Bot, Dispatcher, types, executor
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.dispatcher.storage import FSMContext
+from aiogram.dispatcher import FSMContext
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-import re
 
+import re
 import json
 import os
 import sys
@@ -14,8 +14,6 @@ import traceback
 
 import config
 from config import DB_PATH, ADMIN_ID, WEBAPP_URL
-
-
 
 # токен в config.tok (или config.BOT_TOKEN)
 TOK = getattr(config, "tok", None)
@@ -81,6 +79,19 @@ cursor.execute('''
     )
 ''')
 
+# ✅ Аналитика по поиску размеров
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS size_searches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        chat_id INTEGER,
+        height REAL,
+        width REAL,
+        found_count INTEGER,
+        source TEXT,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+''')
+
 conn.commit()
 
 # ----------------- Вспомогательные функции -----------------
@@ -117,6 +128,23 @@ def save_message_to_db(chat_id, text):
         conn.commit()
     except Exception as e:
         print("Ошибка записи сообщения в БД:", e)
+
+
+# ✅ Запись аналитики по поиску размеров
+def save_size_search_to_db(chat_id, height, width, found_count, source="unknown"):
+    try:
+        cursor.execute(
+            "INSERT INTO size_searches (chat_id, height, width, found_count, source) VALUES (?, ?, ?, ?, ?)",
+            (int(chat_id), float(height), float(width), int(found_count), str(source))
+        )
+        conn.commit()
+    except Exception as e:
+        print("Ошибка записи size_searches в БД:", e)
+
+
+def add_src(url: str, src: str) -> str:
+    # необязательно, но полезно для аналитики (menu/cmd)
+    return f"{url}&src={src}" if "?" in url else f"{url}?src={src}"
 
 # ----------------- Данные -----------------
 belarusian_cities = [
@@ -213,9 +241,10 @@ async def create_menu_button():
     registration_button = types.KeyboardButton('🗂registration')
     help_button = types.KeyboardButton('ℹ️ Info')
 
+    # ✅ src=menu (если ваш index.html отправляет src обратно в sendData)
     size_button = types.KeyboardButton(
         '🔎подбор стекла по размеру',
-        web_app=types.WebAppInfo(url=WEBAPP_URL)
+        web_app=types.WebAppInfo(url=add_src(WEBAPP_URL, "menu"))
     )
 
     markup.add(start_button, registration_button, help_button)
@@ -230,7 +259,7 @@ async def size_cmd(message: types.Message):
     kb.add(
         types.KeyboardButton(
             "🔎подбор стекла по размеру",
-            web_app=types.WebAppInfo(url=WEBAPP_URL)
+            web_app=types.WebAppInfo(url=add_src(WEBAPP_URL, "cmd"))  # ✅ src=cmd
         )
     )
     kb.add(types.KeyboardButton("↩️ В меню"))
@@ -238,7 +267,6 @@ async def size_cmd(message: types.Message):
     await message.answer(
         "🔎 <b>Подбор стекла по размерам</b>\n\n"
         "Нажмите кнопку 👇 «🔎подбор стекла по размеру».\n\n"
-
         "Если передумали — нажмите «↩️ В меню».",
         parse_mode="html",
         reply_markup=kb
@@ -400,6 +428,7 @@ async def handle_size_webapp(message: types.Message, state: FSMContext):
         data = json.loads(message.web_app_data.data)
         height = float(str(data.get("height", "")).replace(",", "."))
         width  = float(str(data.get("width", "")).replace(",", "."))
+        source = str(data.get("src", "unknown"))
     except Exception:
         await bot.send_message(
             chat_id,
@@ -409,6 +438,10 @@ async def handle_size_webapp(message: types.Message, state: FSMContext):
         return
 
     found_glasses9 = perform_size_search(height, width)
+
+    # ✅ Аналитика: пишем каждый поиск по размерам
+    save_size_search_to_db(chat_id, height, width, len(found_glasses9), source)
+
     if found_glasses9:
         await bot.send_message(
             chat_id,
@@ -480,23 +513,17 @@ async def handle_text(message: types.Message, state: FSMContext):
     if 'techno' in user_message_lower:
         await bot.send_message(chat_id, "❗️Исправте в запросе слово <u>techno</u> на правильное написание <b>tecno</b>.", parse_mode='html')
         return
-
     if 'tehno' in user_message_lower:
         await bot.send_message(chat_id, "❗️Исправте в запросе слово <u>tehno</u> на правильное написание <b>tecno</b>.", parse_mode='html')
         return
-
     if '+' in user_message_lower:
         await bot.send_message(chat_id, "❗️Исправте в запросе знак <u>+</u> на слово <b>plus</b>.", parse_mode='html')
         return
 
+    # ✅ если написали на русском — просим на английском
     if re.search(r"[а-яё]", user_message_lower):
-        await bot.send_message(
-            chat_id,
-            "Пожалуйста, пишите модель на <b>английском</b> языке.",
-            parse_mode="html"
-        )
+        await bot.send_message(chat_id, "Пожалуйста, пишите модель на <b>английском</b> языке.", parse_mode="html")
         return
-
 
     # проверяем регистрацию
     user_info = get_user_info(chat_id)
@@ -560,7 +587,7 @@ async def handle_text(message: types.Message, state: FSMContext):
         await bot.send_message(chat_id, response, parse_mode='html')
         return
 
-    # ✅ ВАЖНО: тут больше НЕ добавляем рекламу в каждый блок
+    # ✅ тут больше НЕ добавляем рекламу в каждый блок
     def build_found_block(found_list):
         keyboard = types.InlineKeyboardMarkup()
         response = f"<em><u>Взаимозаменяемые стекла по поиску 🔍<b>'{user_message}'</b> найдено:</u></em>\n"
@@ -601,7 +628,7 @@ async def handle_text(message: types.Message, state: FSMContext):
         await bot.send_message(chat_id, resp, reply_markup=kb, parse_mode='html')
         sent_any_results = True
 
-    # ✅ Реклама ОДИН раз — только если были результаты
+    # ✅ реклама ОДИН раз — только если были результаты
     if sent_any_results:
         await bot.send_message(chat_id, "\n" + AD_TEXT, parse_mode="html", disable_web_page_preview=True)
         return
@@ -634,12 +661,10 @@ async def process_photo_callback(callback_query: types.CallbackQuery):
     query_text = callback_query.message.text or ""
 
     if photo_path:
-        # Раньше тут обрезали последнюю строку из-за рекламы.
-        # Теперь рекламы в этом сообщении нет — берём все строки после заголовка.
         lines = [ln.strip() for ln in query_text.splitlines()]
         found_lines = [ln for ln in lines[1:] if ln]  # всё после заголовка, без пустых
-
         photo_caption = "<b>Фото стекла:</b>\n" + "\n".join(found_lines) if found_lines else "<b>Фото стекла</b>"
+
         await bot.send_photo(
             callback_query.from_user.id,
             open(photo_path, 'rb'),
