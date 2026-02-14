@@ -3,7 +3,9 @@ from aiogram import Bot, Dispatcher, types, executor
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.utils.exceptions import BotBlocked, ChatNotFound, RetryAfter, UserDeactivated
 
+import asyncio
 import re
 import json
 import os
@@ -19,6 +21,7 @@ from config import DB_PATH, ADMIN_ID, WEBAPP_URL
 TOK = getattr(config, "tok", None)
 if not TOK:
     print("❌ BOT token not found in config.tok. Set it and restart.")
+    sys.exit(1)
 
 # импорт данных
 from baza import (
@@ -114,12 +117,49 @@ def get_belarusian_chat_ids():
 
 
 async def send_updates_to_all_users(bot_instance, message_text):
+    # старая функция: отправляет только пользователям из РБ (по списку городов)
     chat_ids = get_belarusian_chat_ids()
     for chat_id in chat_ids:
         try:
             await bot_instance.send_message(chat_id, message_text)
         except Exception as e:
             print(f"Ошибка при отправке сообщения пользователю {chat_id}: {e}")
+
+
+# ✅ НОВОЕ: все зарегистрированные пользователи
+def get_all_chat_ids():
+    cursor.execute("SELECT chat_id FROM users")
+    rows = cursor.fetchall()
+    return [r[0] for r in rows if r and r[0]]
+
+
+# ✅ НОВОЕ: рассылка всем с антифлудом и обработкой ошибок
+async def send_to_all_users(bot_instance, message_text: str):
+    chat_ids = get_all_chat_ids()
+    ok = 0
+    fail = 0
+
+    for chat_id in chat_ids:
+        try:
+            await bot_instance.send_message(chat_id, message_text)
+            ok += 1
+            await asyncio.sleep(0.05)  # антифлуд
+        except RetryAfter as e:
+            await asyncio.sleep(e.timeout)
+            try:
+                await bot_instance.send_message(chat_id, message_text)
+                ok += 1
+            except Exception as e2:
+                print(f"❌ send fail after RetryAfter to {chat_id}: {e2}")
+                fail += 1
+        except (BotBlocked, ChatNotFound, UserDeactivated) as e:
+            print(f"⚠️ unreachable {chat_id}: {e}")
+            fail += 1
+        except Exception as e:
+            print(f"❌ send error to {chat_id}: {e}")
+            fail += 1
+
+    return ok, fail
 
 
 def save_message_to_db(chat_id, text):
@@ -201,15 +241,46 @@ async def unblock_user_command(message: types.Message):
 
 @dp.message_handler(commands=['send'])
 async def send_updates_command(message: types.Message):
+    # старая команда (по РБ)
     if message.from_user.id == ADMIN_ID:
         message_text = ("Друзья! Представляем новый проект — mobirazbor.by :\n"
                         "платформа для разборщиков мобильной техники,\n"
                         "удобный сервис для учёта и поиска запчастей мобильной техники.\n"
                         "🔹Личный склад\n🔹Умный поиск по всей базе\n🔹Поддержка фото, описаний, отзывов и связи между пользователями\n")
         await send_updates_to_all_users(bot, message_text)
-        await message.answer("Сообщение отправлено всем зарегистрированным пользователям.")
+        await message.answer("Сообщение отправлено пользователям из РБ (по городам).")
     else:
         await message.answer("У вас нет прав для отправки сообщений.")
+
+
+# ✅ НОВОЕ: /send1 всем зарегистрированным
+@dp.message_handler(commands=['send1'])
+async def send1_command(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return await message.answer("У вас нет прав для отправки сообщений.")
+
+    text = (
+        "🔔 У нас появился новый проект\n\n"
+        "🤖 Бот для поиска взаимозаменяемых защитных стёкол:\n"
+        "https://t.me/safety_display_bot\n\n"
+        "База активно наполняется и дорабатывается.\n\n"
+        "📢 Канал с обновлениями:\n"
+        "https://t.me/+ze8-aO_YZ-Q0ZGEy\n\n"
+        "💬 Чат для обсуждений и предложений:\n"
+        "https://t.me/+yJDx_G2b0hNjNTBi\n\n"
+        "Если вы готовы поучаствовать в развитии проекта "
+        "(делиться таблицами, наработками, информацией) — "
+        "для вас будут сняты ограничения и открыт полный доступ.\n\n"
+        "Спасибо за поддержку 🙌"
+    )
+
+    ok, fail = await send_to_all_users(bot, text)
+
+    await message.answer(
+        f"✅ Рассылка завершена.\n"
+        f"Отправлено: {ok}\n"
+        f"Ошибок: {fail}"
+    )
 
 
 @dp.message_handler(commands=['send_to_user'])
@@ -324,8 +395,10 @@ async def register_phone_number(message: types.Message, state: FSMContext):
     city = user_data.get('city')
 
     try:
-        cursor.execute("INSERT OR REPLACE INTO users (chat_id, name, city, phone_number) VALUES (?, ?, ?, ?)",
-                       (chat_id, name, city, phone_number))
+        cursor.execute(
+            "INSERT OR REPLACE INTO users (chat_id, name, city, phone_number) VALUES (?, ?, ?, ?)",
+            (chat_id, name, city, phone_number)
+        )
         conn.commit()
     except Exception as e:
         print("Ошибка при вставке пользователя в БД:", e)
@@ -334,7 +407,10 @@ async def register_phone_number(message: types.Message, state: FSMContext):
         return
 
     await state.finish()
-    await bot.send_message(chat_id, "Регистрация успешно завершена!\n\nВведите модель стекла телефона или планшета, которое вы ищите.\n\n Изучите информацию и откройте доп. кнопки 👉 /info")
+    await bot.send_message(
+        chat_id,
+        "Регистрация успешно завершена!\n\nВведите модель стекла телефона или планшета, которое вы ищите.\n\n Изучите информацию и откройте доп. кнопки 👉 /info"
+    )
 
 
 @dp.message_handler(commands=['registration'])
@@ -343,7 +419,10 @@ async def start_message(message: types.Message, state: FSMContext):
     user_info = get_user_info(chat_id)
     if user_info:
         user_name, user_city, user_phone = user_info
-        await bot.send_message(chat_id, f"Вы зарегистрированы! \nВаше имя: {user_name}\nВаш город: {user_city}\nВаш № тел.: {user_phone}\n\nДля удаления регистрационных данных введите команду /delete_registration")
+        await bot.send_message(
+            chat_id,
+            f"Вы зарегистрированы! \nВаше имя: {user_name}\nВаш город: {user_city}\nВаш № тел.: {user_phone}\n\nДля удаления регистрационных данных введите команду /delete_registration"
+        )
     else:
         await bot.send_message(chat_id, "Здравствуйте!\nВведите свое имя для регистрации:")
         await UserRegistration.name.set()
@@ -356,7 +435,10 @@ async def registration_button_handler(message: types.Message, state: FSMContext)
     user_info = get_user_info(chat_id)
     if user_info:
         user_name, user_city, user_phone = user_info
-        await bot.send_message(chat_id, f"Вы зарегистрированы! \nВаше имя: {user_name}\nВаш город: {user_city}\nВаш № тел.: {user_phone}\n\nДля удаления регистрационных данных введите команду /delete_registration")
+        await bot.send_message(
+            chat_id,
+            f"Вы зарегистрированы! \nВаше имя: {user_name}\nВаш город: {user_city}\nВаш № тел.: {user_phone}\n\nДля удаления регистрационных данных введите команду /delete_registration"
+        )
     else:
         await bot.send_message(chat_id, "Здравствуйте!\nВведите свое имя для регистрации:")
         await UserRegistration.name.set()
@@ -373,9 +455,15 @@ async def start_cmd(message: types.Message):
     save_message_to_db(chat_id, message.text)
     user_info = get_user_info(chat_id)
     if user_info:
-        await send_message_with_ad(chat_id, f"Привет👋, @{message.from_user.username}!\n Введите модель стекла телефона или планшета, которое вы ищете.\n Изучите информацию и откройте доп. кнопки 👉 /info")
+        await send_message_with_ad(
+            chat_id,
+            f"Привет👋, @{message.from_user.username}!\n Введите модель стекла телефона или планшета, которое вы ищете.\n Изучите информацию и откройте доп. кнопки 👉 /info"
+        )
     else:
-        await send_message_with_ad(chat_id, "Это бот для поиска взаимозаменяемых стекол для переклейки.\nДля пользования ботом, пожалуйста, зарегистрируйтесь! Используйте команду /registration")
+        await send_message_with_ad(
+            chat_id,
+            "Это бот для поиска взаимозаменяемых стекол для переклейки.\nДля пользования ботом, пожалуйста, зарегистрируйтесь! Используйте команду /registration"
+        )
 
 
 @dp.message_handler(lambda message: message.text == '🚀 start')
@@ -384,9 +472,15 @@ async def start_button_handler(message: types.Message):
     save_message_to_db(chat_id, message.text)
     user_info = get_user_info(chat_id)
     if user_info:
-        await bot.send_message(chat_id, f"Привет👋, @{message.from_user.username}\n Введите модель стекла телефона или планшета, которое вы ищете.\n Изучите информацию и откройте доп. кнопки 👉 /info")
+        await bot.send_message(
+            chat_id,
+            f"Привет👋, @{message.from_user.username}\n Введите модель стекла телефона или планшета, которое вы ищете.\n Изучите информацию и откройте доп. кнопки 👉 /info"
+        )
     else:
-        await bot.send_message(chat_id, "Это бот для поиска взаимозаменяемых стекол для переклейки.\nДля пользования ботом, пожалуйста, зарегистрируйтесь! Используйте команду /registration")
+        await bot.send_message(
+            chat_id,
+            "Это бот для поиска взаимозаменяемых стекол для переклейки.\nДля пользования ботом, пожалуйста, зарегистрируйтесь! Используйте команду /registration"
+        )
 
 
 @dp.message_handler(commands=['info'])
@@ -427,7 +521,7 @@ async def handle_size_webapp(message: types.Message, state: FSMContext):
     try:
         data = json.loads(message.web_app_data.data)
         height = float(str(data.get("height", "")).replace(",", "."))
-        width  = float(str(data.get("width", "")).replace(",", "."))
+        width = float(str(data.get("width", "")).replace(",", "."))
         source = str(data.get("src", "unknown"))
     except Exception:
         await bot.send_message(

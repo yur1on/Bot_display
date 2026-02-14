@@ -2542,6 +2542,10 @@ glass_data = [
     ("Honor 200", ["Honor 200", "<b>Display: Soft OLED</b>"]),
     ("Honor200", ["Honor 200", "<b>Display: Soft OLED</b>"]),
 
+    ("Honor 400", ["Honor 400", "Honor 400 Pro", "<b>Display: Soft OLED</b>"]),
+    ("Honor 400 pro", ["Honor 400", "Honor 400 Pro", "<b>Display: Soft OLED</b>"]),
+
+
     ("Honor 200 pro", ["Honor 100 Pro", "Honor 200 Pro", "Honor 90 Pro", "<b>Display: Soft OLED</b>"]),
     ("Honor 200pro", ["Honor 100 Pro", "Honor 200 Pro", "Honor 90 Pro", "<b>Display: Soft OLED</b>"]),
     ("200 pro", ["Honor 100 Pro", "Honor 200 Pro", "Honor 90 Pro", "<b>Display: Soft OLED</b>"]),
