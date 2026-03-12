@@ -207,12 +207,18 @@ belarusian_cities = [
 ]
 
 # Реклама (будем отправлять ОДИН раз после всех блоков результатов)
+# AD_TEXT = (
+#     '<b>Для жителей РБ 🇧🇾</b>\n'
+#     'Сервис для разборщиков мобильной техники.\n'
+#     'Канал: <a href="https://t.me/MobiraRazbor">@MobiraRazbor</a>\n'
+#     'Чат: <a href="https://t.me/mobirazbor_chat">@mobirazbor_chat</a>\n'
+#     'Сайт: <a href="https://mobirazbor.by">mobirazbor.by</a>'
+# )
 AD_TEXT = (
-    '<b>Для жителей РБ 🇧🇾</b>\n'
-    'Сервис для разборщиков мобильной техники.\n'
-    'Канал: <a href="https://t.me/MobiraRazbor">@MobiraRazbor</a>\n'
-    'Чат: <a href="https://t.me/mobirazbor_chat">@mobirazbor_chat</a>\n'
-    'Сайт: <a href="https://mobirazbor.by">mobirazbor.by</a>'
+    '<b>Для поиска взаимозаменяемых защитных стёкол:</b>\n'
+    'Бот: <a href="https://t.me/safety_display_bot">@safety_display_bot</a>\n\n'
+    'Чат: <a href="https://t.me/+yJDx_G2b0hNjNTBi">@tehnosfera_chat</a>\n'
+    'Канал: <a href="https://t.me/+ze8-aO_YZ-Q0ZGEy">@tehnosfera_info</a>'
 )
 
 # ----------------- Хэндлеры / команды -----------------
